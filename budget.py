@@ -14,4 +14,6 @@ messages=[
 ]
 )
 analysis = response.choices[0].message.content
-print(analysis)
+# Display the analysis in Streamlit
+st.write("### Analysis:")
+st.write(analysis)
