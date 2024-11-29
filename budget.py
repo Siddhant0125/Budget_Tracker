@@ -13,5 +13,5 @@ messages=[
     {"role": "user", "content": "i am having headache"}
 ]
 )
-analysis = response['choices'][0]['message']['content']
+analysis = response.choices[0].message.content
 print(analysis)
