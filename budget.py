@@ -5,4 +5,4 @@ from groq import Groq
 api_key = st.secrets["GROQ_API_KEY"]
 print(f"API Key: {api_key}")
 # Initialize Groq API client
-client = Groq(api_key=api_key)
+client = Groq(api_key)
