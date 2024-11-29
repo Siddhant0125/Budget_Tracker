@@ -1,5 +1,6 @@
-groq
-pandas
-matplotlib
+torch
+torchvision
+torchaudio
+git+https://github.com/openai/whisper.git
 streamlit
-plotly
+groq
