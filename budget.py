@@ -64,18 +64,17 @@ def analyze_transcription(transcription):
     2. A detailed diagnosis of the condition.
     3. Medication recommendations or treatments for the patient.
     """
-    print("Sending transcription to GPT-4 for analysis...")
+    print("Sending transcription to Groq for analysis...")
 
-    try:
-        response = client.chat.completions.create(model="llama3-8b-8192",
-        messages=[
-        {"role": "system", "content": "You are a medical assistant AI with expertise in prognosis, diagnosis, and medication recommendations."},
-        {"role": "user", "content": prompt}
-        ]
-        )
-        analysis = response.choices[0].message.content
-        print("Groq analysis received.")
-        return analysis
+    response = client.chat.completions.create(model="llama3-8b-8192",
+    messages=[
+    {"role": "system", "content": "You are a medical assistant AI with expertise in prognosis, diagnosis, and medication recommendations."},
+    {"role": "user", "content": prompt}
+    ]
+    )
+    analysis = response.choices[0].message.content
+    print("Groq analysis received.")
+    return analysis
 
 # Streamlit App Setup
 st.title("Doctor-Patient Conversation Analysis")
