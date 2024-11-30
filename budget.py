@@ -128,20 +128,11 @@ def save_user_histories(histories):
 
 # Simulated AI authentication function
 def ai_authenticate(username, password):
-    """
-    Simulates AI-based authentication to determine user roles.
-    Args:
-        username (str): The username entered by the user.
-        password (str): The password entered by the user.
-    Returns:
-        dict: Contains authentication status and user role.
-    """
-    # Simulated user data for AI to validate
     predefined_users = {
-        "doctor1": {"password": "docpass1", "role": "doctor"},
-        "doctor2": {"password": "docpass2", "role": "doctor"},
-        "user1": {"password": "userpass1", "role": "user"},
-        "user2": {"password": "userpass2", "role": "user"},
+        "sid": {"password": "sid1", "role": "doctor"},
+        "vin": {"password": "vin2", "role": "user"},
+        "shiv": {"password": "shiv3", "role": "user"},
+        "bala": {"password": "bala4", "role": "user"},
     }
 
     if username in predefined_users and predefined_users[username]["password"] == password:
@@ -151,16 +142,10 @@ def ai_authenticate(username, password):
 
 @st.cache_resource
 def load_whisper_model():
-    """
-    Loads the Whisper model.
-    Returns:
-        The loaded Whisper model.
-    """
     return whisper.load_model("base")
 
 whisper_model = load_whisper_model()
 
-# Transcription function
 def transcribe_audio(audio_file):
     temp_audio_path = "temp_audio.wav"
     with open(temp_audio_path, "wb") as f:
@@ -169,7 +154,6 @@ def transcribe_audio(audio_file):
     os.remove(temp_audio_path)
     return result["text"]
 
-# Analysis function
 def analyze_transcription(transcription):
     prompt = f"""
     The following is a conversation between a doctor and a patient:
@@ -180,72 +164,76 @@ def analyze_transcription(transcription):
     2. A detailed diagnosis of the condition.
     3. Medication recommendations or treatments for the patient.
     """
-    # Mocked response for demo purposes
     return f"Analysis result for transcription: {transcription}"
 
-# Streamlit App
-st.title("AI-Based Role Authentication with History")
+# Streamlit Chat-Based Interface
+st.title("Chat-Based Role Authentication with History")
 
-# Authentication
-if "authenticated" not in st.session_state:
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
     st.session_state.authenticated = False
     st.session_state.role = None
 
-if not st.session_state.authenticated:
-    st.subheader("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+def add_message(role, content):
+    st.session_state.chat_history.append({"role": role, "content": content})
 
-    if st.button("Authenticate"):
-        auth_response = ai_authenticate(username, password)
-        if auth_response["authenticated"]:
-            st.session_state.authenticated = True
-            st.session_state.username = username
-            st.session_state.role = auth_response["role"]
-            st.success(f"Welcome, {username}! You are authenticated as a {st.session_state.role}.")
-        else:
-            st.error("Authentication failed. Please try again.")
+# Initial AI prompt
+if not st.session_state.chat_history:
+    add_message("assistant", "Hello! Please enter your username:")
 
-# Role-Based Access
-if st.session_state.authenticated:
-    # Load user-specific histories
-    user_histories = load_user_histories()
-    if st.session_state.username not in user_histories:
-        user_histories[st.session_state.username] = []
-
-    if st.session_state.role == "doctor":
-        st.subheader("Upload and Analyze Conversations")
-        uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "ogg", "m4a"])
-
-        if uploaded_file is not None:
-            with st.spinner("Transcribing the audio..."):
-                transcription = transcribe_audio(uploaded_file)
-            st.subheader("Transcription:")
-            st.write(transcription)
-
-            with st.spinner("Analyzing the transcription..."):
-                analysis = analyze_transcription(transcription)
-            st.subheader("Analysis:")
-            st.write(analysis)
-
-            # Save transcription and analysis to history
-            user_histories[st.session_state.username].append({"transcription": transcription, "analysis": analysis})
-            save_user_histories(user_histories)
-
+# Display chat history
+for message in st.session_state.chat_history:
+    if message["role"] == "assistant":
+        st.write(f"**Assistant:** {message['content']}")
     else:
-        st.subheader("Access Restricted")
-        st.write("You do not have permission to upload and analyze conversations. Please contact an administrator if you believe this is an error.")
+        st.write(f"**You:** {message['content']}")
 
-    # Display user-specific history
-    st.subheader("Your Past Analyses:")
-    for i, record in enumerate(user_histories[st.session_state.username][::-1], start=1):  # Show most recent first
-        st.write(f"**Analysis {i}:**")
-        st.write(f"- **Transcription:** {record['transcription']}")
-        st.write(f"- **Analysis:** {record['analysis']}")
-        st.write("---")
+# User input
+user_input = st.text_input("Type your message:", key="chat_input")
+if user_input:
+    add_message("user", user_input)
 
-    # Logout Option
-    if st.button("Logout"):
-        st.session_state.authenticated = False
-        st.session_state.role = None
-        st.success("You have been logged out.")
+    if not st.session_state.authenticated:
+        # Authentication flow
+        if len(st.session_state.chat_history) == 2:  # After first user input
+            st.session_state.username = user_input
+            add_message("assistant", "Got it! Now, please enter your password:")
+        elif len(st.session_state.chat_history) == 4:  # After second user input
+            auth_response = ai_authenticate(st.session_state.username, user_input)
+            if auth_response["authenticated"]:
+                st.session_state.authenticated = True
+                st.session_state.role = auth_response["role"]
+                add_message(
+                    "assistant",
+                    f"Welcome, {st.session_state.username}! You are authenticated as a {st.session_state.role}.",
+                )
+            else:
+                add_message("assistant", "Authentication failed. Please refresh and try again.")
+    else:
+        # Main functionality
+        if st.session_state.role == "doctor":
+            if "upload_prompt" not in st.session_state:
+                add_message("assistant", "You can now upload an audio file for transcription and analysis.")
+                st.session_state.upload_prompt = True
+
+            uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "ogg", "m4a"])
+            if uploaded_file is not None:
+                with st.spinner("Transcribing the audio..."):
+                    transcription = transcribe_audio(uploaded_file)
+                add_message("assistant", f"Transcription: {transcription}")
+
+                with st.spinner("Analyzing the transcription..."):
+                    analysis = analyze_transcription(transcription)
+                add_message("assistant", f"Analysis: {analysis}")
+
+                # Save history
+                user_histories = load_user_histories()
+                if st.session_state.username not in user_histories:
+                    user_histories[st.session_state.username] = []
+                user_histories[st.session_state.username].append(
+                    {"transcription": transcription, "analysis": analysis}
+                )
+                save_user_histories(user_histories)
+        else:
+            add_message("assistant", "You do not have permission to upload and analyze conversations.")
+
